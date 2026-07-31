@@ -45,3 +45,26 @@ loguru                      # Enhanced logging for Python
 nemoguardrails              # NVIDIA NeMo Guardrails for input/output safety rails
 langchain-nvidia-ai-endpoints # LangChain integration with NVIDIA AI Endpoints
 
+# --- LLM GATEWAY ---
+portkey-ai                  # Portkey Gateway for unified LLM routing, fallbacks & observability
+
+# --- PRODUCTION PERSISTENCE & RELIABILITY ---
+langgraph-checkpoint-postgres  # Postgres-backed LangGraph checkpointer
+psycopg-pool                   # Connection pool for PostgresSaver
+psycopg-binary                 # PostgreSQL driver
+tenacity                       # Retry-with-backoff for external calls
+slowapi                        # Redis-backed API rate limiting (Limiter class)
+redis                          # Redis client for rate limiting
+prometheus-client              # Prometheus metrics exposition
+prometheus-fastapi-instrumentator  # Automatic FastAPI request metrics
+
+# --- DEV / CI ---
+ruff                           # Fast Python linter and formatter
+
+# --- EVALUATION (EVALS) ---
+ragas                       # RAG-specific evaluation metrics (Faithfulness, Relevancy, Recall)
+deepeval                    # Pytest-compatible test runner wrapping RAGAS & safety metrics
+langfuse                    # Live production monitoring, tracing & user feedback collection
+
+# --- EMBEDDINGS (SENTENCE TRANSFORMERS) ---
+sentence-transformers       # Local fallback embeddings (mxbai-embed-large-v1)
