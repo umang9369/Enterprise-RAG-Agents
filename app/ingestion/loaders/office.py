@@ -8,6 +8,7 @@ def parse_office(file_path: str):
     """
     with logfire.span("parse_office",filename=file_path):
         try:
+            # Unstructured automatically detects if it's docx or pptx
             elements=partition(filename=file_path)
             full_text="\n".join([str(el) for el in elements])
 
