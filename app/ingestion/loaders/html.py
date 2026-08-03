@@ -20,7 +20,13 @@ def parse_html(file_path:str):
             # 2. Extract Text
             text=soup.get_text(separator="\n")
 
-            
+            # 3. Clean Whitespace (Collapse multiple newlines)
+
+            lines=(lines.strip() for line in text.splitlines())
+            chunks=(phrase.strip() for line in lines for phrase in line.split("   "))
+            text_clean="\n".join(chunk for chunk in chunks if chunk)
+
+            return text_clean
 
 
         except Exception as e:
