@@ -18,7 +18,9 @@ def parse_html(file_path:str):
                 script.decompose()
 
             # 2. Extract Text
+            text=soup.get_text(separator="\n")
 
+            
 
 
         except Exception as e:
