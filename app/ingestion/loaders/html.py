@@ -13,7 +13,12 @@ def parse_html(file_path:str):
 
             soup = BeautifulSoup(content,"html.parser")
 
-            
+            # 1. Remove Junk (Scripts, Styles, Metadata)
+            for script in soup(["script","style","meta","noscript"]):
+                script.decompose()
+
+            # 2. Extract Text
+
 
 
         except Exception as e:
