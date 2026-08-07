@@ -23,7 +23,19 @@ def parse_pdf(file_path :str)->str:
                                         blank_pages.append(i+1)   
 
                 # Fallback: use pdfplumber for any pages pypdf returned blank
-                
+                if blank_pages:
+                        logfire.info(f"pypdf returned blank on pages {blank_pages} — retrying with pdfplumber.")
+                        try:
+                            import pdfplumber
+
+                            with pdfplumber.open(file_path)as pdf:
+                                   for page_num in blank_pages:
+                                        page=pdf.pages[page_num-1]
+                                        fallback_text=page.extract_text() or ""
+                                        if fallback_text.strip():
+                                               text_parts.append(fallback_text)
+                        except Exception as plumber_err:
+                            logfire.warning(f"Error occurred while using pdfplumber: {plumber_err}")
             
                 
 
