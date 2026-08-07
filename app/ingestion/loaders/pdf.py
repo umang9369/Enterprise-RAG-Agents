@@ -36,6 +36,15 @@ def parse_pdf(file_path :str)->str:
                                                text_parts.append(fallback_text)
                         except Exception as plumber_err:
                             logfire.warning(f"Error occurred while using pdfplumber: {plumber_err}")
-            
+                ful_text="\n".join(text_parts)
+
+                if not ful_text.strip():
+                    logfire.warning("No text could be extracted from the PDF.")
+                else :
+                    logfire.info(f"Extracted text length: {len(ful_text)} characters")
+                return ful_text
+            except Exception as e:
+                logfire.error(f"Error occurred while parsing PDF: {e}")
+                raise
                 
 
