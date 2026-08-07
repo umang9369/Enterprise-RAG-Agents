@@ -20,3 +20,9 @@ def chunk_text(text:str,chunk_size:int =1500)->list[str]:
                 if current_chunk.strip():
                     chunks.append(current_chunk.strip())
                 current_chunk=p+"\n\n"
+
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+
+        valid_chunks=[c for c in chunks if c.strip()]
+        logfire.info(f"✅ Generated {len(valid_chunks)} chunks")
