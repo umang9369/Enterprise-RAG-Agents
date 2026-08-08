@@ -137,3 +137,33 @@ def _embed_jina_batch(texts:list[str],task:str)->list[list[float]]:
     # Sort by index because the API may not preserve order in rare cases
     results_sorted=sorted(results,key=lambda x:x.get("index",0))
     return [item["embedding"] for item in results_sorted]
+
+
+def _embed_jina(texts:list[str],task:str)->list[list[float]]:
+    """Embed texts via the Jina API in batches with retry."""
+    all_embeddings:list[list[float]]=[]
+    for i in range(0,len(texts),BTACH_SIZE):
+        batch=texts[i:i+BTACH_SIZE]
+        with logfire.span("Embed batch via Jina API",start=i,size=len(batch)):
+            embeddings=_embed_jina_batch(batch,task)
+            all_embeddings.extend(embeddings)
+    return all_embeddings
+
+# ── Fallback embedding ─────────────────────────────────────────────────────────
+
+
+def _embed_fallback_batch(texts:list[str])->list[list[float]]:
+    """Embed texts using the local mxbai model."""
+    embeddings=_active_model.encode(texts,show_progress_bar=false)
+    return embeddings.tolist()
+
+def _embed_fallback(texts:list[str])->list[list[float]]:
+    """Embed texts via the local fallback model in batches."""
+    all_embeddings:list[list[float]]=[]
+    for i in range (0,len(texts),BATCH_SIZE):
+        batch=texts[i:i+BATCH_SIZE]
+        with logfire.span("Embed batch via fallback model",start=1,size=len(batch)):
+            all_embeddings.extend(_embed_fallback_batch(batch))
+
+    return all_embeddings
+
