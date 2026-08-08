@@ -52,3 +52,19 @@ def _probe_jina_api()->bool:
     except Exception as e:
         logfire.warning(f"Jina Embeddings API probe failed: {e}")
         return False   
+
+
+
+def _init():
+    """Initialise embedding provider once per process. Called lazily on first use."""
+    global _active_model,model_type
+    if _active_model is not None or _model_type is not None:
+        return
+
+    if _probe_jina_api():
+        _active_model = None  # Jina API is stateless; no local model to keep
+        _model_type = "jina"
+
+    else:
+        _active_model = _load_fallback()
+        _model_type = "fallback"
