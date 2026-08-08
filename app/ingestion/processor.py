@@ -22,4 +22,12 @@ if settings.LOGFIRE_TOKEN :
         advanced=logfire.AdvancedOptions(base_url=_logfire_base_url) if _logfire_base_url else None
     )
 
-   
+
+from qdrant_client import QdrantClient
+from qdrant_client.http import models 
+from app.ingestion.chunking.splitter import chunk_text
+from app.ingestion.loaders.html import parse_html
+from app.ingestion.loaders.pdf import parse_pdf
+from app.ingestion.loaders.text import parse_text
+from app.services.retrieval.embeddings import embed_text,get_embedding_dim
+
