@@ -6,3 +6,12 @@ import uuid
 
 # logfire must be configured before app module imports so spans from
 # chunking/loaders/embedding are captured from the start.
+
+import logfire
+from app.config import settings
+
+_logfire_base_url=settings.LOGFIRE_BASE_URL
+if not _logfire_base_url and settings.LOGFIRE_TOKEN:
+    if settings.LOGFIRE_TOKEN.startwith("pylf_v2_eu_"):
+        _logfire_base_url="https://logfire-eu.pydantic.dev"
+    
