@@ -31,3 +31,25 @@ from app.ingestion.loaders.pdf import parse_pdf
 from app.ingestion.loaders.text import parse_text
 from app.services.retrieval.embeddings import embed_text,get_embedding_dim
 
+# Local folder where parsed + chunked JSON metadata is saved (replaces GCS processed bucket)
+
+PROCESSED_DATA_DIR = "processed_data"
+
+# Initialize Qdrant Client
+
+qdrant_client = QdrantClient(
+    url=settings.QDRANT_URL,
+    api_key=settings.QDRANT_API_KEY,
+)
+
+def save_processed_locally(data: dict, source_type: str, filename: str) -> str:
+    """Save parsed chunk metadata as JSON in processed_data/<source_type>/."""
+    folder = os.path.join(PROCESSED_DATA_DIR, source_type)
+    os.makedirs(folder, exist_ok=True)
+    dest = os.path.join(folder, f"{filename}.json")
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return dest
+
+
+
