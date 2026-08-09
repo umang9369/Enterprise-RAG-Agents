@@ -172,6 +172,22 @@ def run_universal_ingestion(base_dir: str, explicit_source_type: str = None, wip
 
 
 
+if __name__ == "__main__":
+    # Usage:
+    #   python -m app.ingestion.processor DATA --wipe
+    #   python -m app.ingestion.processor DATA/true_data true
+    wipe_requested = "--wipe" in sys.argv
+    clean_args = [a for a in sys.argv if a != "--wipe"]
+
+    target_dir = clean_args[1] if len(clean_args) > 1 else "DATA"
+    explicit_type = clean_args[2] if len(clean_args) > 2 else None
+
+    if not os.path.exists(target_dir):
+        print(f"Error: path '{target_dir}' does not exist.")
+        sys.exit(1)
+
+    run_universal_ingestion(target_dir, explicit_source_type=explicit_type, wipe=wipe_requested)
+    logfire.info("Ingestion job completed.")
 
 
 
