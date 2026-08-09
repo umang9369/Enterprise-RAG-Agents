@@ -29,6 +29,7 @@ from app.ingestion.chunking.splitter import chunk_text
 from app.ingestion.loaders.html import parse_html
 from app.ingestion.loaders.pdf import parse_pdf
 from app.ingestion.loaders.text import parse_text
+from app.ingestion.loaders.office import parse_office
 from app.services.retrieval.embeddings import embed_text,get_embedding_dim
 
 # Local folder where parsed + chunked JSON metadata is saved (replaces GCS processed bucket)
@@ -52,4 +53,17 @@ def save_processed_locally(data: dict, source_type: str, filename: str) -> str:
     return dest
 
 
-
+def process_file(file_path: str, filename: str, source_type: str):
+    """Parse → chunk → save locally → embed → index in Qdrant."""
+    with logfire.span("Processing File", file=filename, source=source_type):
+        try:
+            # 1. Extract text based on file extension
+            ext = filename.lower().rsplit(".", 1)[-1]
+            if ext == "pdf":
+                full_text = parse_pdf(file_path)
+            elif ext in ("html", "htm"):
+                full_text = parse_html(file_path)
+            elif ext == "txt":
+                full_text = parse_text(file_path)
+            elif ext in ("docx", "pptx"):
+                full_text = parse_office(file_path)
