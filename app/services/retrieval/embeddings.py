@@ -167,3 +167,26 @@ def _embed_fallback(texts:list[str])->list[list[float]]:
 
     return all_embeddings
 
+# ── Unified embedding with runtime fallback ───────────────────────────────
+
+def _ensure_fallback():
+    """Switch to the local fallback model if not already active."""
+    global _active_model,_model_type
+    if _model_type !="fallback":
+        logfire.warning("Switching to local fallback embeddings")
+        _active_model=_load_fallback()
+        _model_type="fallback"
+
+
+def _embed(texts:list[str],task:str)->list[list[float]]:
+    """Embed texts using the active provider, falling back to local on failure."""
+    _init()
+    if _model_type=="jina":
+        try:
+            return _embed_jina(texts,task)
+        except Exception as e:
+            logfire.error(f"Jina Embeddings API failed: {e}. Falling back to local model.")
+            _ensure_fallback()
+        return _embed_fallback(texts)
+
+
