@@ -153,4 +153,26 @@ def run_universal_ingestion(base_dir: str, explicit_source_type: str = None, wip
             logfire.info(f"Created collection '{settings.QDRANT_COLLECTION}' ({dim}-dim, Cosine).")
 
 
+        # Route to sub-folders or treat the whole dir as one source
+        subdirs = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+
+        if not subdirs:
+            if explicit_source_type:
+                source_type = explicit_source_type
+            else:
+                base_name = os.path.basename(os.path.normpath(base_dir)).lower()
+                source_type = "true" if "true" in base_name else "noisy" if "noisy" in base_name else "general"
+            logfire.info(f"No sub-folders found — processing '{base_dir}' as '{source_type}'.")
+            process_directory(base_dir, source_type)
+        else:
+            for subdir in subdirs:
+                source_type = "true" if "true" in subdir.lower() else "noisy" if "noisy" in subdir.lower() else subdir
+                process_directory(os.path.join(base_dir, subdir), source_type)
+
+
+
+
+
+
+
         
