@@ -67,3 +67,51 @@ def process_file(file_path: str, filename: str, source_type: str):
                 full_text = parse_text(file_path)
             elif ext in ("docx", "pptx"):
                 full_text = parse_office(file_path)
+            else:
+                logfire.warning(f"Skipping unsupported file type: {filename}")
+                return
+
+            if not full_text or not full_text.strip():
+                logfire.warning(f"No text extracted from {filename} — skipping.")
+                return
+
+            # 2. Chunk text
+            chunks = chunk_text(full_text)
+            if not chunks:
+                return
+
+            # 3. Save processed metadata locally
+            processed_data = {
+                "filename": filename,
+                "source_type": source_type,
+                "chunks": chunks,
+            }
+            local_path = save_processed_locally(processed_data, source_type, filename)
+            logfire.info(f"Saved processed data → {local_path}")
+
+            # 4. Embed and index in Qdrant
+            with logfire.span("Vectorizing & Indexing"):
+                embeddings = embed_texts(chunks)
+                points = [
+                    models.PointStruct(
+                        id=str(uuid.uuid4()),
+                        vector=vector,
+                        payload={
+                            "text": chunk,
+                            "source": filename,
+                            "source_type": source_type,
+                        },
+                    )
+                    for chunk, vector in zip(chunks, embeddings)
+                ]
+
+                qdrant_client.upsert(
+                    collection_name=settings.QDRANT_COLLECTION,
+                    points=points,
+                )
+                logfire.info(f"Indexed {len(points)} points to Qdrant from {filename}.")
+
+        except Exception as e:
+            logfire.error(f"Failed to process {filename}: {e}")
+
+
