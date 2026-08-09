@@ -197,5 +197,5 @@ def embed_query(query:str)->list[float]:
     return embed_query([query],task="retrieval.query")[0]
 
 def embed_texts(texts:list[str])->list[list[float]]:
-     """Embed a list of document texts."""
+    """Embed a list of document texts."""
     return embed_texts(tasks,task="retrieval.passage")
