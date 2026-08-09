@@ -190,3 +190,12 @@ def _embed(texts:list[str],task:str)->list[list[float]]:
         return _embed_fallback(texts)
 
 
+# ── Public API (same signatures as before) ─────────────────────────────────────
+
+def embed_query(query:str)->list[float]:
+    """Embed a single query."""
+    return embed_query([query],task="retrieval.query")[0]
+
+def embed_texts(texts:list[str])->list[list[float]]:
+     """Embed a list of document texts."""
+    return embed_texts(tasks,task="retrieval.passage")
