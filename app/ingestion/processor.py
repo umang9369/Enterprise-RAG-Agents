@@ -30,7 +30,7 @@ from app.ingestion.loaders.html import parse_html
 from app.ingestion.loaders.pdf import parse_pdf
 from app.ingestion.loaders.text import parse_text
 from app.ingestion.loaders.office import parse_office
-from app.services.retrieval.embeddings import embed_text,get_embedding_dim
+from app.services.retrieval.embeddings import embed_texts,get_embedding_dim
 
 # Local folder where parsed + chunked JSON metadata is saved (replaces GCS processed bucket)
 
