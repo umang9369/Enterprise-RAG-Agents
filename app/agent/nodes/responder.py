@@ -32,3 +32,29 @@ def generate_node(state: AgentState):
         LATEST MESSAGE:
         "{user_msg}"
         """
+
+    else:
+        logfire.info("Generating technical RAG response.")
+        max_context_chars = 25000
+        full_context = ""
+
+        for doc in state["documents"]:
+            if len(full_context) + len(doc) < max_context_chars:
+                full_context += doc + "\n\n"
+            else:
+                logfire.warning("Context truncated to fit Groq TPM limits.")
+                break
+
+        prompt = f"""
+        You are a Senior Technical Architect.
+        Answer the question using the TECHNICAL CONTEXT provided.
+
+        TECHNICAL CONTEXT:
+        {full_context}
+
+        CONVERSATION HISTORY:
+        {history_str}
+
+        USER QUESTION:
+        "{user_msg}"
+        """
