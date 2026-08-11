@@ -68,3 +68,5 @@ langfuse                    # Live production monitoring, tracing & user feedbac
 
 # --- EMBEDDINGS (SENTENCE TRANSFORMERS) ---
 sentence-transformers       # Local fallback embeddings (mxbai-embed-large-v1)
+
+flashrank
