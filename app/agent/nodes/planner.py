@@ -34,3 +34,20 @@ def planner_node(state: AgentState):
 
     Output ONLY 'CONVERSATIONAL' or the search query.
     """
+
+    with logfire.span("🧠 Planner Decision"):
+        decision = llm.invoke(prompt).content.strip()
+        logfire.info(f"Intent identified: {decision}")
+
+    if decision == "CONVERSATIONAL":
+        return {
+            "current_query": "CONVERSATIONAL",
+            "status": "Handling conversationally (using memory)...",
+            "plan": ["Intent: Conversational/Memory", "Retrieval: Skipped"],
+        }
+
+    return {
+        "current_query": decision,
+        "status": f"Technical research needed. Searching for: {decision}",
+        "plan": ["Intent: Technical", f"Search Term: {decision}"],
+    }
