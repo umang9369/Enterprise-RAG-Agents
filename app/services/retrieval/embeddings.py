@@ -101,7 +101,7 @@ def _init():
 
 # ── Public helpers ─────────────────────────────────────────────────────────────
 
-def get_embedding_model():
+def get_embedding_dim():
     """Return the active embedding model and its type."""
     _init()
     return _EMBEDDING_DIM
