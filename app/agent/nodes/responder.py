@@ -19,3 +19,16 @@ def generate_node(state: AgentState):
         history_str += f"{role}: {msg['content']}\n"
 
     user_msg = state["messages"][-1]["content"] if state["messages"] else ""
+
+    if query == "CONVERSATIONAL":
+        logfire.info("Generating conversational response using memory.")
+        prompt = f"""
+        You are a friendly and helpful Enterprise AI Assistant.
+        Answer the user's latest message using the CONVERSATION HISTORY below.
+
+        CONVERSATION HISTORY:
+        {history_str}
+
+        LATEST MESSAGE:
+        "{user_msg}"
+        """
