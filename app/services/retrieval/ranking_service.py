@@ -36,4 +36,24 @@ class _JinaReranker:
 
         results = payload.get("results", [])
 
-        
+         # Results are already sorted by relevance_score descending
+        reranked_docs = []
+        for res in results[:top_n]:
+            doc_text = res.get("document")
+            if doc_text is None:
+                # Fallback to original index if document text is missing
+                index = res.get("index")
+                if index is not None and 0 <= index < len(documents):
+                    doc_text = documents[index]
+            if doc_text is not None:
+                reranked_docs.append(doc_text)
+
+        return reranked_docs
+
+def _get_ranker() -> _JinaReranker:
+    """Returns the Jina Reranker wrapper (lazy singleton)."""
+    global _ranker
+    if _ranker is None:
+        logfire.info("🧠 Initializing Jina Reranker v3 via API...")
+        _ranker = _JinaReranker()
+    return _ranker
