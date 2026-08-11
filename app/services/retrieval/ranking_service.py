@@ -57,3 +57,21 @@ def _get_ranker() -> _JinaReranker:
         logfire.info("🧠 Initializing Jina Reranker v3 via API...")
         _ranker = _JinaReranker()
     return _ranker
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    reraise=True,
+    before_sleep=before_sleep_log(logfire, "warning"),
+)
+def _rerank(query: str, documents: list[str], top_n: int) -> list[str]:
+    """Core Jina API reranking with retry on transient failures."""
+    ranker = _get_ranker()
+    return ranker.rerank(query, documents, top_n)
+
+def _rerank(query: str, documents: list[str], top_n: int) -> list[str]:
+    """Core Jina API reranking with retry on transient failures."""
+    ranker = _get_ranker()
+    return ranker.rerank(query, documents, top_n)
+
