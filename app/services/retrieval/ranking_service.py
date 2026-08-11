@@ -75,3 +75,28 @@ def _rerank(query: str, documents: list[str], top_n: int) -> list[str]:
     ranker = _get_ranker()
     return ranker.rerank(query, documents, top_n)
 
+def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[str]:
+    """
+    Refines retrieval results by re-scoring documents against the query semantically.
+    Retries transient failures and falls back to the original Qdrant order if
+    reranking ultimately fails, ensuring the user still receives an answer.
+    """
+    if not documents:
+        return []
+
+    if not settings.JINA_API_KEY:
+        logfire.warning("⚠️ JINA_API_KEY not set — skipping reranking.")
+        return documents[:top_n]
+
+    start_time = time.time()
+    logfire.info(f"📡 [Reranker] Sending {len(documents)} docs to Jina Reranker API...")
+
+    try:
+        reranked_docs = _rerank(query, documents, top_n)
+        duration = time.time() - start_time
+        logfire.info(f"✅ [Reranker] Done in {duration:.2f}s.")
+        return reranked_docs
+    except Exception as e:
+        logfire.error(f"❌ [Reranker] Semantic Reranking Failed after retries: {e}")
+        # Fallback to the original Qdrant order to ensure the user still gets an answer
+        return documents[:top_n]
