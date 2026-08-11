@@ -86,3 +86,19 @@ def generate_node(state: AgentState):
             logfire.error(f"LLM Generation failed after retries: {e}")
             raise e
 
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    reraise=True,
+    before_sleep=before_sleep_log(logfire, "warning"),
+)
+
+def _generate_response(prompt: str):
+    """Call the LLM gateway with retry logic for transient failures."""
+    return portkey_client.chat.completions.create(
+        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/gpt-5-mini",
+        messages=[{"role": "user", "content": prompt}],
+    )
+
