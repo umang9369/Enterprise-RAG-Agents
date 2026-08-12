@@ -8,7 +8,7 @@ from app.config import settings
 # Constants for embedding model selection and configuration
 
 
-BTACH_SIZE = 64
+BATCH_SIZE = 64
 _EMBEDDING_DIM = 1024
 _JINA_EMBEDDING_URL = "https://api.jina.ai/v1/embeddings"
 _JINA_MODEL = "jina-embeddings-v3"
@@ -39,14 +39,14 @@ def _probe_jina_api()->bool:
         return False
 
     try:
-        response = requests.get(
+        response = requests.post(
             _JINA_EMBEDDING_URL,
             headers={
                 "Authorization": f"Bearer {settings.JINA_API_KEY}",
                 "Content-Type": "application/json",
                 },
                 json={
-                    "model": _JINDA_MODEL,
+                    "model": _JINA_MODEL,
                     "task": "retrieval.query",
                     "normalized": True,
                     "input": ["probe"],
@@ -59,7 +59,7 @@ def _probe_jina_api()->bool:
         if not payload.get("data"):
             raise RuntimeError("jina api returned  empty data")
         logfire.info("Jina Embeddings API is reachable and working.")   
-        return true
+        return True
 
     except Exception as e:
         logfire.warning(f"Jina Embeddings API probe failed: {e}")
@@ -69,7 +69,7 @@ def _probe_jina_api()->bool:
 
 def _init():
     """Initialise embedding provider once per process. Called lazily on first use."""
-    global _active_model,model_type
+    global _active_model, _model_type
     if _active_model is not None or _model_type is not None:
         return
 
@@ -110,14 +110,14 @@ def get_embedding_dim():
 # ── Jina API embedding ─
 
 @retry(
-    stop=stop_after_prompt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=5),
     reraise=True,
-    before_sleep=before_sleep_log(logfire,"warning")
+    before_sleep=before_sleep_log(logfire, "warning"),
 )
 def _embed_jina_batch(texts:list[str],task:str)->list[list[float]]:
     """Call the Jina Embeddings API for a single batch."""
-    response = request.post(
+    response = requests.post(
         _JINA_EMBEDDING_URL,
         headers={
             "Authorization": f"Bearer {settings.JINA_API_KEY}",
@@ -142,8 +142,8 @@ def _embed_jina_batch(texts:list[str],task:str)->list[list[float]]:
 def _embed_jina(texts:list[str],task:str)->list[list[float]]:
     """Embed texts via the Jina API in batches with retry."""
     all_embeddings:list[list[float]]=[]
-    for i in range(0,len(texts),BTACH_SIZE):
-        batch=texts[i:i+BTACH_SIZE]
+    for i in range(0,len(texts),BATCH_SIZE ):
+        batch=texts[i:i+BATCH_SIZE ]
         with logfire.span("Embed batch via Jina API",start=i,size=len(batch)):
             embeddings=_embed_jina_batch(batch,task)
             all_embeddings.extend(embeddings)
@@ -154,7 +154,7 @@ def _embed_jina(texts:list[str],task:str)->list[list[float]]:
 
 def _embed_fallback_batch(texts:list[str])->list[list[float]]:
     """Embed texts using the local mxbai model."""
-    embeddings=_active_model.encode(texts,show_progress_bar=false)
+    embeddings=_active_model.encode(texts,show_progress_bar=False)
     return embeddings.tolist()
 
 def _embed_fallback(texts:list[str])->list[list[float]]:
@@ -194,8 +194,8 @@ def _embed(texts:list[str],task:str)->list[list[float]]:
 
 def embed_query(query:str)->list[float]:
     """Embed a single query."""
-    return embed_query([query],task="retrieval.query")[0]
+    return _embed([query],task="retrieval.query")[0]
 
 def embed_texts(texts:list[str])->list[list[float]]:
     """Embed a list of document texts."""
-    return embed_texts(tasks,task="retrieval.passage")
+    return _embed(texts,task="retrieval.passage")

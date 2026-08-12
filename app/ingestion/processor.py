@@ -10,6 +10,8 @@ import uuid
 import logfire
 from app.config import settings
 
+logfire.configure()
+
 _logfire_base_url=settings.LOGFIRE_BASE_URL
 if not _logfire_base_url and settings.LOGFIRE_TOKEN:
     if settings.LOGFIRE_TOKEN.startwith("pylf_v2_eu_"):
