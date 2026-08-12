@@ -57,3 +57,25 @@ def create_checkpointer() -> BaseCheckpointSaver:
             "Do not use MemorySaver in production — state is lost on restart."
         )
         return MemorySaver()
+
+
+def build_graph(checkpointer: BaseCheckpointSaver | None = None) -> StateGraph:
+    """
+    Build and compile the LangGraph RAG agent.
+
+    Args:
+        checkpointer: Optional checkpointer. If None, a Postgres-backed
+            checkpointer is created. Pass a MemorySaver in tests.
+    """
+    if checkpointer is None:
+        checkpointer = create_checkpointer()
+
+    # 1. Initialize the State Graph
+    workflow = StateGraph(AgentState)
+
+    # 2. Define the Nodes
+    workflow.add_node("planner", planner_node)
+    workflow.add_node("retriever", retrieve_node)
+    workflow.add_node("responder", generate_node)
+
+    
