@@ -28,11 +28,11 @@ class Settings(BaseSettings):
     #JUDGE_OPENAI_API_KEY: str | None = None
 
     # --- PORTKEY LLM GATEWAY ---
-    #PORTKEY_API_KEY: str
-    ##PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
+    PORTKEY_API_KEY: str
+    PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
     # Portkey saved config is referenced by its system-generated `pc-...` ID.
     # Required when block_inline_config is enabled on the workspace.
-    #PORTKEY_PRIMARY_CONFIG_ID: str
+    PORTKEY_PRIMARY_CONFIG_ID: str
 
     # --- QDRANT VECTOR DB ---
     QDRANT_URL: str = Field(validation_alias=AliasChoices("QDRANT_URL", "QDRANT_CLUSTER_ENDPOINT"))
