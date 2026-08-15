@@ -35,3 +35,16 @@ def _search_enterprise_knowledge(query: str, limit: int = 8):
         )
 
     return results
+
+
+def search_enterprise_knowledge(query: str, limit: int = 8):
+    """
+    Performs a high-precision search in the enterprise knowledge base.
+    Uses the modern query_points interface. Retries transient failures
+    and gracefully degrades to an empty result set on persistent failure.
+    """
+    try:
+        return _search_enterprise_knowledge(query, limit=limit)
+    except Exception as e:
+        logfire.error(f"❌ Qdrant Search Failed after retries: {e}")
+        return []
