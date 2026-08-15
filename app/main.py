@@ -13,6 +13,7 @@ logfire.configure(
 
 import time
 import uuid
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
@@ -48,13 +49,56 @@ def _init_rate_limiter():
         app.state.limiter = Limiter(key_func=get_remote_address, storage_uri=settings.redis_url)
         app.state.rate_limiter_storage = "redis"
         logfire.info("🚦 Rate limiting initialized via Redis.")
+        return True
     except Exception as e:
+        logfire.warning(f"⚠️ Could not initialize Redis rate limiter: {e}. Using in-memory limiter.")
+        from slowapi import Limiter
+        from slowapi.util import get_remote_address
+
         app.state.limiter = Limiter(key_func=get_remote_address)
         app.state.rate_limiter_storage = "memory"
-        logfire.warning(f"⚠️ Redis not configured or unavailable ({e}); using in-memory rate limiting.")
+        return False
 
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    return True
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan context manager for startup and shutdown events.
+    Replaces the deprecated @app.on_event("startup") pattern.
+    """
+    # Startup
+    initialize_rails()
+
+    # Build the agent graph with the production checkpointer (Postgres by default).
+    app.state.rag_agent = build_graph()
+
+    app.state.rate_limiter_enabled = _init_rate_limiter()
+
+    # Verify all external dependencies are reachable.
+    connection_results = check_all_connections()
+    all_healthy = log_connection_summary(connection_results)
+    if settings.STRICT_STARTUP and not all_healthy:
+        failed = [name for name, r in connection_results.items() if not r.healthy]
+        raise RuntimeError(f"STRICT_STARTUP enabled; failing services: {', '.join(failed)}")
+
+    if not settings.API_KEY:
+        logfire.warning("🔓 RAG_API_KEY is not set — /query is open to anyone. Set it in production.")
+
+    logfire.info("✅ Enterprise RAG API startup complete.")
+
+    yield  # Application runs here
+
+    # Shutdown (optional cleanup)
+    logfire.info("🛑 Enterprise RAG API shutting down.")
+
+
+# Initialize FastAPI with lifespan context manager
+app = FastAPI(
+    title="Enterprise Agentic RAG API",
+    lifespan=lifespan
+)
+app.include_router(health_router)
+
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(_security)):
     """
@@ -138,28 +182,12 @@ def rate_limit(times: int = None, seconds: int = None):
 
 
 
-# Initialize FastAPI
-app = FastAPI(title="Enterprise Agentic RAG API")
+# Initialize FastAPI with lifespan context manager
+app = FastAPI(
+    title="Enterprise Agentic RAG API",
+    lifespan=lifespan
+)
 app.include_router(health_router)
-
-@app.on_event("startup")
-def startup_event():
-    initialize_rails()
-
-    # Build the agent graph with the production checkpointer (Postgres by default).
-    app.state.rag_agent = build_graph()
-
-    app.state.rate_limiter_enabled = _init_rate_limiter()
-
-    # Verify all external dependencies are reachable.
-    connection_results = check_all_connections()
-    all_healthy = log_connection_summary(connection_results)
-    if settings.STRICT_STARTUP and not all_healthy:
-        failed = [name for name, r in connection_results.items() if not r.healthy]
-        raise RuntimeError(f"STRICT_STARTUP enabled; failing services: {', '.join(failed)}")
-
-    if not settings.API_KEY:
-        logfire.warning("🔓 RAG_API_KEY is not set — /query is open to anyone. Set it in production.")
 
 
 class QueryRequest(BaseModel):

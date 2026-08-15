@@ -29,6 +29,7 @@ class Settings(BaseSettings):
 
     # --- PORTKEY LLM GATEWAY ---
     PORTKEY_API_KEY: str
+    PORTKEY_PRIMARY_SLUG: str = "openai-primary"
     PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
     # Portkey saved config is referenced by its system-generated `pc-...` ID.
     # Required when block_inline_config is enabled on the workspace.

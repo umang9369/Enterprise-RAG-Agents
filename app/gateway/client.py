@@ -11,6 +11,22 @@ from app.config import settings
 #   - The inline config dict approach is disabled for this account, so all
 #     retry/fallback/cache behavior must be configured inside the Portkey UI.
 
+def get_langchain_llm(feature: str = "rag") -> ChatOpenAI:
+    """
+    Returns a Portkey-backed ChatOpenAI - a drop-in for LangChain nodes.
+
+    Why ChatOpenAI:
+      Portkey is a proxy. It exposes an OpenAI-compatible endpoint at PORTKEY_GATEWAY_URL.
+      ChatOpenAI supports base_url (points at Portkey) and default_headers (passes Portkey
+      auth + saved-config reference). The @slug/model-name format is Portkey-specific - the
+      upstream provider's own client does not understand it. Portkey is just in the middle.
+    """
+    return ChatOpenAI(
+        api_key=settings.PORTKEY_API_KEY,
+        base_url=PORTKEY_GATEWAY_URL,
+        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/gpt-5-mini",
+        default_headers=_make_headers(feature),
+    )
 
 
 def _make_headers(feature: str = "rag") -> dict:
@@ -35,11 +51,35 @@ def _make_headers(feature: str = "rag") -> dict:
 # We use the OpenAI SDK directly because the native Portkey SDK does not
 # surface a first-class config_id constructor parameter; the header-based
 # approach works reliably with block_inline_config enabled.
-portkey_client = OpenAI(
-    api_key=settings.PORTKEY_API_KEY,
-    base_url=PORTKEY_GATEWAY_URL,
-    default_headers=_make_headers(),
-)
+# 
+# Lazy-loaded singleton to avoid requiring PORTKEY_PRIMARY_CONFIG_ID at import time.
+_portkey_client_instance = None
+
+def get_portkey_client() -> OpenAI:
+    """
+    Returns a lazily-initialized Portkey-backed OpenAI client.
+    The client is only created on first use, allowing the module to import
+    even if PORTKEY_PRIMARY_CONFIG_ID is not yet configured.
+    """
+    global _portkey_client_instance
+    if _portkey_client_instance is None:
+        _portkey_client_instance = OpenAI(
+            api_key=settings.PORTKEY_API_KEY,
+            base_url=PORTKEY_GATEWAY_URL,
+            default_headers=_make_headers(),
+        )
+    return _portkey_client_instance
+
+class _LazyPortkeyClient:
+    """
+    Proxy object that lazily initializes the Portkey client on first access.
+    This allows module imports to succeed even if PORTKEY_PRIMARY_CONFIG_ID is not set.
+    """
+    def __getattr__(self, name):
+        return getattr(get_portkey_client(), name)
+
+# Lazy-loaded client proxy: behaves like OpenAI but initializes on first use
+portkey_client = _LazyPortkeyClient()
 
 def get_async_openai_client(feature: str = "rag") -> AsyncOpenAI:
     """
