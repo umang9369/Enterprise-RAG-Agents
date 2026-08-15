@@ -113,6 +113,14 @@ class _AppLimiter:
 
 app_limiter = _AppLimiter()
 
+#Ye wrapper isliye banaya gaya hai kyunki FastAPI me **routes pehle load/decorate hote hain
+#aur actual Redis ya memory-based limiter baad me startup ke time initialize hota hai**. 
+#Agar hum directly actual limiter use karein, to route load hote waqt 
+#limiter available nahi hoga aur problem aa sakti hai.
+#`_AppLimiter` ek **middleman/placeholder** ki tarah kaam karta hai—pehle routes ko register hone deta hai
+#aur jab request aati hai tab jo actual limiter startup me bana hai (Redis ya memory), usko use karta hai.
+#Isse route code simple rehta hai aur Redis available ho ya na ho
+#application properly kaam karti hai.
 
 
 # Initialize FastAPI
