@@ -15,3 +15,23 @@ client = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
     reraise=True,
     before_sleep=before_sleep_log(logfire, "warning"),
 )
+
+def _search_enterprise_knowledge(query: str, limit: int = 8):
+    """Internal search with retry logic."""
+    query_vector = embed_query(query)
+
+    # Using query_points - the modern standard for Qdrant
+    response = client.query_points(
+        collection_name=settings.QDRANT_COLLECTION,
+        query=query_vector,
+        limit=limit,
+        with_payload=True,  # JSON
+    )
+
+    results = []
+    for res in response.points:
+        results.append(
+            {"content": res.payload.get("text", ""), "source": res.payload.get("source", "Unknown"), "score": res.score}
+        )
+
+    return results
