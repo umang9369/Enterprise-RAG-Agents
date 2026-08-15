@@ -123,6 +123,70 @@ app_limiter = _AppLimiter()
 #application properly kaam karti hai.
 
 
+
+def rate_limit(times: int = None, seconds: int = None):
+    """
+    Decorator factory that applies slowapi rate limiting using the limiter
+    initialized at startup. Falls back to a no-op if the limiter is missing.
+    The rule is resolved at request time so settings can be overridden in tests.
+    """
+
+    def _resolve_rule() -> str:
+        t = times or settings.RATE_LIMIT_PER_MINUTE
+        s = seconds or 60
+        return _get_limiter_rule(t, s)
+
+    return app_limiter.limit(_resolve_rule)
+
+
+
 # Initialize FastAPI
 app = FastAPI(title="Enterprise Agentic RAG API")
+app.include_router(health_router)
+
+@app.on_event("startup")
+def startup_event():
+    initialize_rails()
+
+    # Build the agent graph with the production checkpointer (Postgres by default).
+    app.state.rag_agent = build_graph()
+
+    app.state.rate_limiter_enabled = _init_rate_limiter()
+
+    # Verify all external dependencies are reachable.
+    connection_results = check_all_connections()
+    all_healthy = log_connection_summary(connection_results)
+    if settings.STRICT_STARTUP and not all_healthy:
+        failed = [name for name, r in connection_results.items() if not r.healthy]
+        raise RuntimeError(f"STRICT_STARTUP enabled; failing services: {', '.join(failed)}")
+
+    if not settings.API_KEY:
+        logfire.warning("🔓 RAG_API_KEY is not set — /query is open to anyone. Set it in production.")
+
+
+class QueryRequest(BaseModel):
+    q: str
+    thread_id: Optional[str] = "default_user"
+
+
+@app.get("/")
+def home():
+    return {"message": "Enterprise LangGraph RAG API is live."}
+
+
+@app.get("/graph")
+
+def get_graph_image(_api_key: str = Depends(verify_api_key)):
+    """
+    Returns the Mermaid image of the agent's workflow.
+    """
+    try:
+        png_bytes = app.state.rag_agent.get_graph().draw_mermaid_png()
+        return Response(content=png_bytes, media_type="image/png")
+    except Exception as e:
+        return {"error": f"Could not generate graph image: {e}"}
+
+
+@app.post("/query")
+@rate_limit()
 
