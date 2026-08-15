@@ -84,6 +84,35 @@ def _get_limiter_rule(times: int, seconds: int) -> str:
         return f"{times}/{seconds // 3600}hour"
     return f"{times}/{seconds}second"
 
+class _AppLimiter:
+    """
+    Thin wrapper around the Limiter instance that is initialized at startup.
+    Allows routes to be decorated at import time while the real limiter
+    (Redis-backed or in-memory) is configured in startup_event.
+    """
+
+    def limit(self, rule_or_callable):
+        def decorator(func):
+            import functools
+
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                limiter = getattr(app.state, "limiter", None)
+                if limiter is None:
+                    return func(*args, **kwargs)
+
+                rule = rule_or_callable() if callable(rule_or_callable) else rule_or_callable
+                # Build the slowapi wrapper at request time so the limiter
+                # instance and storage backend are always current.
+                return limiter.limit(rule)(func)(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+
+app_limiter = _AppLimiter()
+
 
 
 # Initialize FastAPI
