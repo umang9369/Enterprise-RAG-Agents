@@ -14,7 +14,7 @@ import logfire
 import requests
 from psycopg_pool import ConnectionPool
 from qdrant_client import QdrantClient
-#from redis import Redis
+from redis import Redis
 
 from app.config import settings
 from app.gateway.client import portkey_client
@@ -69,16 +69,19 @@ def _check_neon_postgres() -> ConnectionResult:
                 pass
 
 
-#def _check_upstash_redis() -> ConnectionResult:
+def _check_upstash_redis() -> ConnectionResult:
     """Verify Upstash Redis is reachable."""
+    if not settings.UPSTASH_REDIS_REST_URL or not settings.UPSTASH_REDIS_REST_TOKEN:
+        return ConnectionResult("redis", False, "Redis not configured")
     try:
         r = Redis.from_url(
             settings.redis_url,
             socket_connect_timeout=5,
             socket_timeout=5,
         )
-        r.ping()
-        return ConnectionResult("redis", True, "Upstash Redis reachable")
+        if r.ping():
+            return ConnectionResult("redis", True, "Upstash Redis reachable")
+        raise ConnectionError("Redis did not respond to ping")
     except Exception as e:
         logfire.warning(f"Redis health check failed: {e}")
         return ConnectionResult("redis", False, str(e))
@@ -206,7 +209,7 @@ def _check_logfire() -> ConnectionResult:
 # Ordered list of all checks to run during startup and /ready.
 _CHECKERS: list[Callable[[], ConnectionResult]] = [
     _check_neon_postgres,
-    #_check_upstash_redis,
+    _check_upstash_redis,
     _check_qdrant,
     _check_portkey_gateway,
     _check_jina_embeddings,

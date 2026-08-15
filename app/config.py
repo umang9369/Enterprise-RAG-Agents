@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     NEON_DB_URL: str
 
     # --- UPSTASH REDIS (rate limiting) ---
-    #UPSTASH_REDIS_REST_URL: str
-    #UPSTASH_REDIS_REST_TOKEN: str
+    UPSTASH_REDIS_REST_URL: str | None = None
+    UPSTASH_REDIS_REST_TOKEN: str | None = None
 
     # --- API SAFETY ---
     API_KEY: str | None = Field(default=None, alias="RAG_API_KEY")
@@ -94,6 +94,9 @@ class Settings(BaseSettings):
         passed to `limits` for rate limiting and to the health checker.
         """
         host = self.UPSTASH_REDIS_REST_URL.replace("https://", "").rstrip("/")
+        if not self.UPSTASH_REDIS_REST_URL or not self.UPSTASH_REDIS_REST_TOKEN:
+            return ""
+
         token = quote(self.UPSTASH_REDIS_REST_TOKEN, safe="")
         netloc = f"default:{token}@{host}"
         return urlunsplit(("rediss", netloc, "/0", "ssl_cert_reqs=required", ""))
