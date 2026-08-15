@@ -40,3 +40,32 @@ portkey_client = OpenAI(
     base_url=PORTKEY_GATEWAY_URL,
     default_headers=_make_headers(),
 )
+
+def get_async_openai_client(feature: str = "rag") -> AsyncOpenAI:
+    """
+    Returns an async OpenAI client that routes through the Portkey gateway.
+    Use this for non-LangChain async LLM calls (e.g. async FastAPI endpoints).
+    """
+    return AsyncOpenAI(
+        api_key=settings.PORTKEY_API_KEY,
+        base_url=PORTKEY_GATEWAY_URL,
+        default_headers=_make_headers(feature),
+    )
+
+def extract_cache_status(response) -> str:
+    """
+    Pull x-portkey-cache-status from the response.
+
+    The OpenAI SDK does not expose raw headers on parsed responses, so cache
+    hit/miss tracking is best-effort. We inspect common attribute paths and
+    fall back to 'MISS'.
+    """
+    for attr in ("_raw_response", "_response", "_http_response", "headers"):
+        raw = getattr(response, attr, None)
+        if raw is not None:
+            headers = getattr(raw, "headers", None)
+            if headers is not None:
+                status = headers.get("x-portkey-cache-status", "")
+                if status:
+                    return status.upper()
+    return "MISS"
