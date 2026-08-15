@@ -21,7 +21,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from app.agent.graph import build_graph
-from app.guardrails import guard, initialize_rails
+from app.guardrails.rails import guard, initialize_rails
 from app.health import router as health_router
 from app.logging import set_request_id
 from app.services.health.connection_checker import check_all_connections, log_connection_summary
