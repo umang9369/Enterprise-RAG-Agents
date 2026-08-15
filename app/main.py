@@ -76,6 +76,14 @@ def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(_security
         )
     return credentials.credentials
 
+def _get_limiter_rule(times: int, seconds: int) -> str:
+    """Convert times/seconds into a slowapi limit string, e.g. '20/minute'."""
+    if seconds % 60 == 0:
+        return f"{times}/{seconds // 60}minute"
+    if seconds % 3600 == 0:
+        return f"{times}/{seconds // 3600}hour"
+    return f"{times}/{seconds}second"
+
 
 
 # Initialize FastAPI
