@@ -101,7 +101,10 @@ YAML_CONTENT = """
 models:
   - type: main
     engine: groq
-    model: llama3-8b-8192
+    model: llama-3.1-8b-instant
+    parameters:
+      base_url: "https://api.groq.com/openai/v1"
+      api_key: "$GROQ_THIRD_API_KEY"
 
 instructions:
   - type: general

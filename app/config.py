@@ -25,17 +25,18 @@ class Settings(BaseSettings):
     JINA_API_KEY: str
 
     # --- GROQ LLM ---
-    GROQ_API_KEY: str | None = None
+    GROQ_THIRD_API_KEY: str | None = None
     # --- OPENAI LLM ---
     JUDGE_OPENAI_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
     # --- PORTKEY LLM GATEWAY ---
     PORTKEY_API_KEY: str
-    PORTKEY_PRIMARY_SLUG: str = "openai-primary"
+    PORTKEY_PRIMARY_SLUG: str = "groq-primary"
     PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
     # Portkey saved config is referenced by its system-generated `pc-...` ID.
     # Required when block_inline_config is enabled on the workspace.
     PORTKEY_PRIMARY_CONFIG_ID: str
+    PORTKEY_MODEL: str = "llama-3.1-8b-instant"
 
     # --- QDRANT VECTOR DB ---
     QDRANT_URL: str = Field(validation_alias=AliasChoices("QDRANT_URL", "QDRANT_CLUSTER_ENDPOINT"))
@@ -73,7 +74,7 @@ class Settings(BaseSettings):
     @property
     def judge_api_key(self) -> str:
         """Dedicated judge key, falling back to the main Groq key."""
-        return self.JUDGE_OPENAI_API_KEY or self.GROQ_API_KEY
+        return self.JUDGE_OPENAI_API_KEY or self.GROQ_THIRD_API_KEY
 
     @property
     def postgres_uri(self) -> str:

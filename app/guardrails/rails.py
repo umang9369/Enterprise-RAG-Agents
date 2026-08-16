@@ -1,5 +1,6 @@
+import os
+
 import logfire
-from langchain_openai import ChatOpenAI
 from nemoguardrails import LLMRails, RailsConfig
 
 from app.config import settings
@@ -7,46 +8,53 @@ from app.guardrails.colang_rules import COLANG_CONTENT, RAIL_INDICATORS, YAML_CO
 
 _rails: LLMRails | None = None
 
-def initialize_rails() -> None:
+
+def initialize_rails():
     """
-    Build the NeMo LLMRails singleton at app startup.
-    Uses OpenAI gpt-5-mini for fast intent classification at the gate.
+    Initialize the guardrails system from the Colang/YAML config.
+    This function is called once at application startup.
     """
     global _rails
+    if _rails:
+        return
 
-    guard_llm = ChatOpenAI(api_key=settings.OPENAI_API_KEY, model="gpt-5-mini")
+    # Set the API key for the guardrails LLM (Groq) in the environment
+    # so nemoguardrails can pick it up automatically based on the YAML config.
+    if settings.GROQ_THIRD_API_KEY:
+        # NeMo Guardrails expands environment variables in the YAML config.
+        os.environ["GROQ_THIRD_API_KEY"] = settings.GROQ_THIRD_API_KEY
+    else:
+        logfire.warning("⚠️ GROQ_THIRD_API_KEY is not set, guardrails may not function.")
 
-    config = RailsConfig.from_content(colang_content=COLANG_CONTENT, yaml_content=YAML_CONTENT)
+    # Initialize rails without an explicit LLM.
+    # It will now use the `engine: groq` configuration from YAML_CONTENT.
+    _rails = LLMRails(
+        config=RailsConfig.from_content(
+            colang_content=COLANG_CONTENT,
+            yaml_content=YAML_CONTENT,
+        )
+    )
 
-    _rails = LLMRails(config, llm=guard_llm)
-    logfire.info("🛡️ NeMo Guardrails initialised (gpt-5-mini).")
 
-
-
-def guard(message: str) -> tuple[bool, str | None]:
+def guard(message: str) -> tuple[bool, str]:
     """
-    Run a user message through the NeMo rails gate.
-
-    Returns:
-        (True,  rail_response) — a rail fired; return this response immediately,
-                                skip the RAG pipeline entirely.
-        (False, None)          — message is clean; proceed to LangGraph.
+    Run the guardrails on a message. Returns (rail_fired, response).
+    If the guardrails system fails for any reason, it "fails open" and
+    allows the request to proceed.
     """
-    if _rails is None:
-        logfire.warning("⚠️ Guardrails not initialised — skipping gate.")
-        return False, None
+    if not _rails:
+        return False, message
 
-    with logfire.span("🛡️ Guardrails Check"):
-        result = _rails.generate(messages=[{"role": "user", "content": message}])
-
-        # NeMo returns {'role': 'assistant', 'content': '...'} — extract text
-        content = result.get("content", "") if isinstance(result, dict) else str(result)
-
-        fired = any(indicator in content for indicator in RAIL_INDICATORS)
-
-        if fired:
-            logfire.info(f"🛡️ Guardrails fired | query='{message[:80]}'")
-            return True, content
-
-        logfire.info("✅ Guardrails passed.")
-        return False, None
+    try:
+        result = _rails.generate(
+            messages=[{"role": "user", "content": message}]
+        )
+        response = (
+            result.get("content", "")
+            if isinstance(result, dict)
+            else str(result)
+        )
+        return any(indicator in response for indicator in RAIL_INDICATORS), response
+    except Exception as e:
+        logfire.error(f"🛡️ Guardrails failed: {e}")
+        return False, message

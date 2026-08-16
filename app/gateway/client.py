@@ -24,7 +24,7 @@ def get_langchain_llm(feature: str = "rag") -> ChatOpenAI:
     return ChatOpenAI(
         api_key=settings.PORTKEY_API_KEY,
         base_url=PORTKEY_GATEWAY_URL,
-        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/gpt-5-mini",
+        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/{settings.PORTKEY_MODEL}",
         default_headers=_make_headers(feature),
     )
 
