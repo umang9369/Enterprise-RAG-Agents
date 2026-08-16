@@ -26,17 +26,20 @@ class Settings(BaseSettings):
 
     # --- GROQ LLM ---
     GROQ_THIRD_API_KEY: str | None = None
+    GROQ_API_KEY: str | None = None
     # --- OPENAI LLM ---
     JUDGE_OPENAI_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
     # --- PORTKEY LLM GATEWAY ---
+
     PORTKEY_API_KEY: str
-    PORTKEY_PRIMARY_SLUG: str = "groq-primary"
+    PORTKEY_PRIMARY_SLUG: str = "rag1"  
+    PORTKEY_PRIMARY_CONFIG_ID: str
+    PORTKEY_MODEL: str = "llama-3.1-8b-instant"
     PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
     # Portkey saved config is referenced by its system-generated `pc-...` ID.
     # Required when block_inline_config is enabled on the workspace.
-    PORTKEY_PRIMARY_CONFIG_ID: str
-    PORTKEY_MODEL: str = "llama-3.1-8b-instant"
+   
 
     # --- QDRANT VECTOR DB ---
     QDRANT_URL: str = Field(validation_alias=AliasChoices("QDRANT_URL", "QDRANT_CLUSTER_ENDPOINT"))

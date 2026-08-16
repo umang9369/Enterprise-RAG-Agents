@@ -98,7 +98,7 @@ def generate_node(state: AgentState):
 def _generate_response(prompt: str):
     """Call the LLM gateway with retry logic for transient failures."""
     return portkey_client.chat.completions.create(
-        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/gpt-5-mini",
+        model=f"@{settings.PORTKEY_PRIMARY_SLUG}/{settings.PORTKEY_MODEL}",
         messages=[{"role": "user", "content": prompt}],
     )
 
