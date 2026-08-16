@@ -100,8 +100,8 @@ define flow farewell
 YAML_CONTENT = """
 models:
   - type: main
-    engine: openai
-    model: gpt-3.5-turbo
+    engine: groq
+    model: llama3-8b-8192
 
 instructions:
   - type: general

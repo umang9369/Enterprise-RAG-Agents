@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     # --- JINA AI (embeddings + reranker) ---
     JINA_API_KEY: str
 
+    # --- GROQ LLM ---
+    GROQ_API_KEY: str | None = None
     # --- OPENAI LLM ---
-    #JUDGE_OPENAI_API_KEY: str | None = None
-
+    JUDGE_OPENAI_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
     # --- PORTKEY LLM GATEWAY ---
     PORTKEY_API_KEY: str
     PORTKEY_PRIMARY_SLUG: str = "openai-primary"
@@ -70,8 +72,8 @@ class Settings(BaseSettings):
 
     @property
     def judge_api_key(self) -> str:
-        """Dedicated judge key, falling back to the main OpenAI key."""
-        return self.JUDGE_OPENAI_API_KEY or self.OPENAI_API_KEY
+        """Dedicated judge key, falling back to the main Groq key."""
+        return self.JUDGE_OPENAI_API_KEY or self.GROQ_API_KEY
 
     @property
     def postgres_uri(self) -> str:
