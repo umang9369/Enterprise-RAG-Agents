@@ -67,3 +67,14 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.session_id = str(uuid.uuid4())
         st.rerun()
+
+# --- MAIN CHAT ---
+st.title("🤖 Enterprise Agentic Assistant")
+
+
+# Display history
+for message in st.session_state.messages:
+    avatar = AI_AVATAR if message["role"] == "assistant" else USER_AVATAR
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
+
