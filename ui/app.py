@@ -114,4 +114,29 @@ if prompt := st.chat_input("Ask about your documentation..."):
                         status.update(label="✅ Answer Synthesized", state="complete", expanded=False)
                         full_answer = data.get("answer", "No response.")
                     # Legacy async polling path (kept for compatibility).
-                    
+                    elif "job_id" in data:
+                        job_id = data["job_id"]
+                        poll_url = f"{base_url}/query/status/{job_id}"
+                        result_data = None
+                        max_attempts = 60
+                        for attempt in range(max_attempts):
+                            with logfire.span("🔄 Polling RAG job", job_id=job_id, attempt=attempt):
+                                poll_resp = requests.get(poll_url, headers=headers, timeout=30)
+                                poll_resp.raise_for_status()
+                                poll_data = poll_resp.json()
+                            job_status = poll_data.get("status", "UNKNOWN")
+                            status.write(f"⏳ Job status: {job_status} (attempt {attempt + 1}/{max_attempts})")
+                            if job_status in ("SUCCESS", "FAILURE"):
+                                result_data = poll_data.get("result") or poll_data.get("error")
+                                break
+                            time.sleep(2)
+                        if result_data is None:
+                            raise RuntimeError("Polling timed out waiting for the RAG job to complete.")
+                        if isinstance(result_data, dict):
+                            data = result_data
+                            status.update(label="✅ Answer Synthesized", state="complete", expanded=False)
+                            full_answer = data.get("answer", "No response.")
+                        else:
+                            raise RuntimeError(f"RAG job failed: {result_data}")
+                    else:
+                        raise RuntimeError(f"Unexpected /query response: {data}")
