@@ -105,4 +105,13 @@ if prompt := st.chat_input("Ask about your documentation..."):
                         response = requests.post(url, json=payload, headers=headers, timeout=180)
                         data = response.json()
 
+                    # Guardrails can block synchronously.
+                    if data.get("status") == "Blocked by guardrails.":
+                        status.update(label="🛡️ Blocked by guardrails", state="complete", expanded=False)
+                        full_answer = data.get("answer", "Blocked by guardrails.")
+                    # Modern synchronous response: answer + thought_process + sources.
+                    elif "answer" in data:
+                        status.update(label="✅ Answer Synthesized", state="complete", expanded=False)
+                        full_answer = data.get("answer", "No response.")
+                    # Legacy async polling path (kept for compatibility).
                     
