@@ -78,3 +78,13 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
+
+# Chat Input
+if prompt := st.chat_input("Ask about your documentation..."):
+    # START TRACE: User Interaction
+    with logfire.span("💬 User Chat Interaction", user_query=prompt, session_id=st.session_state.session_id):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(prompt)
+
+        
