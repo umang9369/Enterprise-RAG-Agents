@@ -87,4 +87,22 @@ if prompt := st.chat_input("Ask about your documentation..."):
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(prompt)
 
-        
+        # Assistant Response
+        with st.chat_message("assistant", avatar=AI_AVATAR):
+            with st.status("🔍 Agent is thinking...", expanded=True) as status:
+                try:
+                    # DISTRIBUTED TRACE: Calling Backend
+                    with logfire.span("📡 Calling RAG Backend"):
+                        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+                        url = f"{base_url}/query"
+                        payload = {"q": prompt, "thread_id": st.session_state.session_id}
+                        headers = {
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {os.getenv('RAG_API_KEY', '')}",
+                        }
+                        # First guardrails invocation can be slow as NeMo downloads
+                        # configs/models; allow up to 3 minutes.
+                        response = requests.post(url, json=payload, headers=headers, timeout=180)
+                        data = response.json()
+
+                    
