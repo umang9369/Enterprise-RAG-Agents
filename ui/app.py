@@ -162,4 +162,16 @@ if prompt := st.chat_input("Ask about your documentation..."):
                     st.stop()
 
 
-            
+            # Final Answer Streaming
+            answer_placeholder = st.empty()
+            full_answer = data.get("answer", "No response.")
+
+            curr_text = ""
+            for char in full_answer:
+                curr_text += char
+                answer_placeholder.markdown(curr_text + "▌")
+                time.sleep(0.005)
+
+            answer_placeholder.markdown(full_answer)
+            st.session_state.messages.append({"role": "assistant", "content": full_answer})
+            logfire.info("✅ Chat cycle completed successfully.")
