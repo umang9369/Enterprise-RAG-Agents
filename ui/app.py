@@ -140,3 +140,26 @@ if prompt := st.chat_input("Ask about your documentation..."):
                             raise RuntimeError(f"RAG job failed: {result_data}")
                     else:
                         raise RuntimeError(f"Unexpected /query response: {data}")
+
+
+                    # Show Reasoning Steps from Backend
+                    steps = data.get("thought_process", [])
+                    for step in steps:
+                        st.write(f"⚙️ {step}")
+
+                    # --- SHOW SOURCES (NESTED EXPANDABLES) ---
+                    sources = data.get("sources", [])
+                    if sources:
+                        with st.expander("📄 View Retrieved Context (Sources)"):
+                            for i, source in enumerate(sources):
+                                preview = source[:100].replace("\n", " ") + "..."
+                                with st.expander(f"Chunk {i + 1}: {preview}"):
+                                    st.info(source)
+                except Exception as e:
+                    logfire.error(f"❌ UI-Backend Connection Failed: {e}")
+                    status.update(label="❌ Connection Failed", state="error")
+                    st.error(f"Backend Offline or job failed: {e}")
+                    st.stop()
+
+
+            
