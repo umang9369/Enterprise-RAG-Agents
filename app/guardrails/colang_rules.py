@@ -101,7 +101,7 @@ YAML_CONTENT = """
 models:
   - type: main
     engine: groq
-    model: meta-llama/llama-guard-4-12b
+    model: openai/gpt-oss-20b
     api_key_env_var: GROQ_THIRD_API_KEY
     parameters:
       base_url: "https://api.groq.com/openai/v1"
