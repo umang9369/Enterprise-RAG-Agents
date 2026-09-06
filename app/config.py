@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     PORTKEY_API_KEY: str
     PORTKEY_PRIMARY_SLUG: str = "rag1"  
     PORTKEY_PRIMARY_CONFIG_ID: str
-    PORTKEY_MODEL: str = "llama-3.1-8b-instant"
+    PORTKEY_MODEL: str = "qwen3.6-27b"
     PORTKEY_FALLBACK_SLUG: str = "anthropic-fallback"
     # Portkey saved config is referenced by its system-generated `pc-...` ID.
     # Required when block_inline_config is enabled on the workspace.
@@ -100,9 +100,9 @@ class Settings(BaseSettings):
         used as the Redis password under the default username. The result is
         passed to `limits` for rate limiting and to the health checker.
         """
-        host = self.UPSTASH_REDIS_REST_URL.replace("https://", "").rstrip("/")
         if not self.UPSTASH_REDIS_REST_URL or not self.UPSTASH_REDIS_REST_TOKEN:
             return ""
+        host = self.UPSTASH_REDIS_REST_URL.replace("https://", "").rstrip("/")
 
         token = quote(self.UPSTASH_REDIS_REST_TOKEN, safe="")
         netloc = f"default:{token}@{host}"

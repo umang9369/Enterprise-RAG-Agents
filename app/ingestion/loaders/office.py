@@ -21,4 +21,4 @@ def parse_office(file_path: str):
             
         except Exception as e:
             logfire.error(f"office parsing failed for : {e}")
-            raise e
+            raise

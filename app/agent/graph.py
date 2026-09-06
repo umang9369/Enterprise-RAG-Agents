@@ -25,6 +25,7 @@ def create_checkpointer() -> BaseCheckpointSaver:
 
         pool = ConnectionPool(
             conninfo=settings.postgres_uri,
+            min_size=1,
             max_size=20,
             open=False,
             timeout=10,

@@ -11,4 +11,4 @@ def parse_text(file_path:str):
                 return f.read()
         except Exception as e:
             logfire.error(f"Error occurred while parsing text file: {e}")
-            raise e
+            raise

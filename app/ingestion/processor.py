@@ -3,6 +3,11 @@ import os
 import sys
 import uuid
 
+# Prevent OpenBLAS memory allocation / thread exhaustion crash on Windows
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 
 # logfire must be configured before app module imports so spans from
 # chunking/loaders/embedding are captured from the start.
@@ -12,10 +17,10 @@ from app.config import settings
 
 logfire.configure()
 
-_logfire_base_url=settings.LOGFIRE_BASE_URL
+_logfire_base_url = settings.LOGFIRE_BASE_URL
 if not _logfire_base_url and settings.LOGFIRE_TOKEN:
-    if settings.LOGFIRE_TOKEN.startwith("pylf_v2_eu_"):
-        _logfire_base_url="https://logfire-eu.pydantic.dev"
+    if settings.LOGFIRE_TOKEN.startswith("pylf_v2_eu_"):
+        _logfire_base_url = "https://logfire-eu.pydantic.dev"
 
 if settings.LOGFIRE_TOKEN :
     logfire.configure(
@@ -25,8 +30,8 @@ if settings.LOGFIRE_TOKEN :
     )
 
 
-from qdrant_client import QdrantClient
-from qdrant_client.http import models 
+
+from qdrant_client import QdrantClient, models 
 from app.ingestion.chunking.splitter import chunk_text
 from app.ingestion.loaders.html import parse_html
 from app.ingestion.loaders.pdf import parse_pdf
@@ -56,7 +61,7 @@ def save_processed_locally(data: dict, source_type: str, filename: str) -> str:
 
 
 def process_file(file_path: str, filename: str, source_type: str):
-    """Parse → chunk → save locally → embed → index in Qdrant."""
+    """Parse -> chunk -> save locally -> embed -> index in Qdrant."""
     with logfire.span("Processing File", file=filename, source=source_type):
         try:
             # 1. Extract text based on file extension
@@ -74,7 +79,7 @@ def process_file(file_path: str, filename: str, source_type: str):
                 return
 
             if not full_text or not full_text.strip():
-                logfire.warning(f"No text extracted from {filename} — skipping.")
+                logfire.warning(f"No text extracted from {filename} -- skipping.")
                 return
 
             # 2. Chunk text
@@ -89,7 +94,7 @@ def process_file(file_path: str, filename: str, source_type: str):
                 "chunks": chunks,
             }
             local_path = save_processed_locally(processed_data, source_type, filename)
-            logfire.info(f"Saved processed data → {local_path}")
+            logfire.info(f"Saved processed data -> {local_path}")
 
             # 4. Embed and index in Qdrant
             with logfire.span("Vectorizing & Indexing"):
@@ -128,7 +133,7 @@ def process_directory(dir_path: str, source_type: str):
 
 
 
-def run_universal_ingestion(base_dir: str, explicit_source_type: str = None, wipe: bool = False):
+def run_universal_ingestion(base_dir: str, explicit_source_type: str | None = None, wipe: bool = False):
     """
     Scan base_dir, map sub-folders to source types, and ingest all documents.
     Pass --wipe to drop and recreate the Qdrant collection before ingestion.
@@ -142,7 +147,7 @@ def run_universal_ingestion(base_dir: str, explicit_source_type: str = None, wip
                     logfire.info(f"Collection '{settings.QDRANT_COLLECTION}' deleted.")
 
 
-        # Recreate collection — dimension resolved at runtime after embedding model probe
+        # Recreate collection -- dimension resolved at runtime after embedding model probe
         if not qdrant_client.collection_exists(settings.QDRANT_COLLECTION):
             dim = get_embedding_dim()
             qdrant_client.create_collection(
@@ -164,7 +169,7 @@ def run_universal_ingestion(base_dir: str, explicit_source_type: str = None, wip
             else:
                 base_name = os.path.basename(os.path.normpath(base_dir)).lower()
                 source_type = "true" if "true" in base_name else "noisy" if "noisy" in base_name else "general"
-            logfire.info(f"No sub-folders found — processing '{base_dir}' as '{source_type}'.")
+            logfire.info(f"No sub-folders found -- processing '{base_dir}' as '{source_type}'.")
             process_directory(base_dir, source_type)
         else:
             for subdir in subdirs:
