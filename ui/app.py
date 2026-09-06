@@ -66,7 +66,7 @@ st.markdown(f"""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 * {{ font-family: 'Inter', sans-serif; }}
 
-/* ── Background image on main chat area (25% opacity) ── */
+/* ── Background image on main chat area (2% opacity) ── */
 [data-testid="stMain"]::before {{
     content: '';
     position: fixed;
@@ -75,7 +75,7 @@ st.markdown(f"""
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.25;
+    opacity: 0;
     z-index: 0;
     pointer-events: none;
 }}
