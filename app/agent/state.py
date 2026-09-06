@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, List, TypedDict
+from typing import Annotated, List, Optional, TypedDict
 
 
 class AgentState(TypedDict):
@@ -11,3 +11,6 @@ class AgentState(TypedDict):
     plan: List[str]
     status: str
     final_answer: str
+    # User-supplied Groq API key forwarded from the HTTP request header.
+    # Required — requests without a key are rejected before reaching the graph.
+    groq_api_key: str

@@ -3,15 +3,18 @@ from tenacity import before_sleep_log, retry, stop_after_attempt, wait_exponenti
 
 from app.agent.state import AgentState
 from app.config import settings
-from app.gateway import extract_cache_status, portkey_client
+from app.gateway import extract_cache_status, make_portkey_client_for_key
+
 
 def generate_node(state: AgentState):
     """
     Synthesizes a response using both Documentation Context AND Conversation History.
     Uses the native Portkey client (not LangChain) so we can read the
     x-portkey-cache-status response header and surface Cache: Hit in the UI.
+    The user's own Groq API key is forwarded via Portkey's Authorization override.
     """
     query = state["current_query"]
+    groq_api_key = state["groq_api_key"]
 
     # Cap history to the last 6 messages (3 exchanges) to prevent the prompt
     # from growing unboundedly and triggering Groq 413 "request too large" errors.
@@ -67,7 +70,7 @@ def generate_node(state: AgentState):
 
     with logfire.span("✍️ LLM Synthesis"):
         try:
-            response = _generate_response(prompt)
+            response = _generate_response(prompt, groq_api_key)
             content = response.choices[0].message.content
             cache_status = extract_cache_status(response)
             is_cache_hit = cache_status == "HIT"
@@ -93,18 +96,16 @@ def generate_node(state: AgentState):
             raise e
 
 
-
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=5),
     reraise=True,
     before_sleep=before_sleep_log(logfire, "warning"),
 )
-
-def _generate_response(prompt: str):
-    """Call the LLM gateway with retry logic for transient failures."""
-    return portkey_client.chat.completions.create(
+def _generate_response(prompt: str, groq_api_key: str):
+    """Call the LLM gateway with retry logic. Uses the user's Groq key via Portkey."""
+    client = make_portkey_client_for_key(groq_api_key)
+    return client.chat.completions.create(
         model=f"@{settings.PORTKEY_PRIMARY_SLUG}/{settings.PORTKEY_MODEL}",
         messages=[{"role": "user", "content": prompt}],
     )
-

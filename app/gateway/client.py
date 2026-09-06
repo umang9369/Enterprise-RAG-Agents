@@ -81,6 +81,25 @@ class _LazyPortkeyClient:
 # Lazy-loaded client proxy: behaves like OpenAI but initializes on first use
 portkey_client = _LazyPortkeyClient()
 
+def make_portkey_client_for_key(groq_api_key: str) -> OpenAI:
+    """
+    Build a per-request OpenAI client routed through Portkey, authenticated
+    with the caller's own Groq API key.
+
+    Portkey forwards the ``Authorization`` header upstream to Groq, so every
+    LLM call is billed against the user's own quota — not the project key.
+    A new client is created for each request (cheap: no I/O at construction).
+    """
+    headers = _make_headers()
+    # Override the provider-level auth so Portkey passes this key to Groq.
+    headers["Authorization"] = f"Bearer {groq_api_key}"
+    return OpenAI(
+        api_key=settings.PORTKEY_API_KEY,
+        base_url=PORTKEY_GATEWAY_URL,
+        default_headers=headers,
+    )
+
+
 def get_async_openai_client(feature: str = "rag") -> AsyncOpenAI:
     """
     Returns an async OpenAI client that routes through the Portkey gateway.

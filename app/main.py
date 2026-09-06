@@ -115,6 +115,20 @@ def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(_security
     return credentials.credentials
 
 
+def _require_groq_key(request: Request) -> str:
+    """
+    Extract the user-supplied Groq API key from the X-User-Groq-Key header.
+    Returns 401 immediately if the header is absent or empty — no .env fallback.
+    """
+    key = request.headers.get("X-User-Groq-Key", "").strip()
+    if not key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Groq API key required. Please add your GROQ_API_KEY in the sidebar.",
+        )
+    return key
+
+
 class QueryRequest(BaseModel):
     q: str = Field(..., min_length=1, max_length=10_000)
     thread_id: str | None = "default_user"
@@ -147,6 +161,7 @@ def query(
     request: Request,
     body: QueryRequest,
     _api_key: str = Depends(verify_api_key),
+    groq_api_key: str = Depends(_require_groq_key),
 ):
     """
     Runs the LangGraph RAG pipeline synchronously.
@@ -159,8 +174,8 @@ def query(
 
     start = time.perf_counter()
     with logfire.span("🔍 /query", request_id=request_id, thread_id=thread_id):
-        # Gate: run guardrails synchronously so blocked requests never run the graph.
-        rail_fired, rail_response = guard(q)
+        # Gate: run guardrails with the user's Groq key, synchronously.
+        rail_fired, rail_response = guard(q, groq_api_key=groq_api_key)
         if rail_fired:
             GUARDRAILS_BLOCKS_TOTAL.labels(blocked="true").inc()
             elapsed = time.perf_counter() - start
@@ -189,6 +204,7 @@ def query(
                 "documents": [],
                 "plan": ["Start"],
                 "status": "Initializing Graph...",
+                "groq_api_key": groq_api_key,
             }
             config = {"configurable": {"thread_id": thread_id}}
             final_output = rag_agent.invoke(initial_state, config=config)
