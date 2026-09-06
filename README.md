@@ -305,5 +305,3 @@ curl -X POST "http://localhost:8000/query" \
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License.
