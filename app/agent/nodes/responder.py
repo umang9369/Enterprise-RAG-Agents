@@ -13,8 +13,12 @@ def generate_node(state: AgentState):
     """
     query = state["current_query"]
 
+    # Cap history to the last 6 messages (3 exchanges) to prevent the prompt
+    # from growing unboundedly and triggering Groq 413 "request too large" errors.
+    MAX_HISTORY_TURNS = 6
+    recent_messages = state["messages"][:-1][-MAX_HISTORY_TURNS:]
     history_str = ""
-    for msg in state["messages"][:-1]:
+    for msg in recent_messages:
         role = "User" if msg["role"] == "user" else "Assistant"
         history_str += f"{role}: {msg['content']}\n"
 
@@ -35,7 +39,9 @@ def generate_node(state: AgentState):
 
     else:
         logfire.info("Generating technical RAG response.")
-        max_context_chars = 25000
+        # Keep context within ~18k chars to stay safely under Groq's per-request
+        # token limit even after adding system prompt + history overhead.
+        max_context_chars = 18000
         full_context = ""
 
         for doc in state["documents"]:
