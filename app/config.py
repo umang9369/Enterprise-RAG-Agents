@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     LANGSMITH_PROJECT: str = "rag_scale_test"
     LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
 
+    # --- HUGGING FACE ---
+    HF_TOKEN: str | None = None
+
     @field_validator("QDRANT_API_KEY", mode="before")
     @classmethod
     def _empty_qdrant_key_as_none(cls, v):
@@ -127,6 +130,9 @@ def apply_langchain_env():
         os.environ.setdefault("LANGCHAIN_PROJECT", settings.LANGSMITH_PROJECT)
     if settings.LANGSMITH_ENDPOINT:
         os.environ.setdefault("LANGCHAIN_ENDPOINT", settings.LANGSMITH_ENDPOINT)
+    if settings.HF_TOKEN:
+        os.environ["HF_TOKEN"] = settings.HF_TOKEN
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = settings.HF_TOKEN
 
 
 apply_langchain_env()
