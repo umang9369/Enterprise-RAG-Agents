@@ -14,10 +14,9 @@ def initialize_rails():
     Initialize the guardrails system from the Colang/YAML config.
     This function is called once at application startup.
 
-    NeMo Guardrails uses the OpenAI-compatible client internally even when
-    `engine: groq` is specified. It resolves the API key from the OPENAI_API_KEY
-    env var by default. We temporarily remap GROQ_THIRD_API_KEY → OPENAI_API_KEY
-    so that NeMo authenticates against Groq's endpoint correctly.
+    NeMo resolves the API key via the ``api_key_env_var`` field in the YAML
+    config — it reads the named environment variable at call time, so we just
+    need to ensure GROQ_THIRD_API_KEY is set before initializing.
     """
     global _rails
     if _rails:
@@ -29,13 +28,11 @@ def initialize_rails():
             "⚠️ No Groq API key found (GROQ_THIRD_API_KEY / GROQ_API_KEY). "
             "Guardrails will run in rule-only mode (no LLM intent detection)."
         )
-
-    # NeMo Guardrails resolves the Groq key via OPENAI_API_KEY when using
-    # the openai-compatible endpoint. Save and restore the original value.
-    _prev_openai_key = os.environ.get("OPENAI_API_KEY")
-    if groq_key:
+    else:
+        # Ensure the env var NeMo reads (api_key_env_var: GROQ_THIRD_API_KEY)
+        # is populated. pydantic-settings loads it into Settings but may not
+        # write it back to os.environ.
         os.environ["GROQ_THIRD_API_KEY"] = groq_key
-        os.environ["OPENAI_API_KEY"] = groq_key  # NeMo picks this up for auth
 
     try:
         _rails = LLMRails(
@@ -48,14 +45,6 @@ def initialize_rails():
     except Exception as exc:
         logfire.error(f"❌ Failed to initialize NeMo Guardrails: {exc}")
         _rails = None
-    finally:
-        # Always restore the original OPENAI_API_KEY so the rest of the app
-        # (Portkey, LangChain, etc.) is not affected.
-        if _prev_openai_key is not None:
-            os.environ["OPENAI_API_KEY"] = _prev_openai_key
-        elif "OPENAI_API_KEY" in os.environ and groq_key:
-            # We set it; remove it if it wasn't originally present.
-            del os.environ["OPENAI_API_KEY"]
 
 
 def guard(message: str) -> tuple[bool, str]:
