@@ -134,7 +134,7 @@ class QueryRequest(BaseModel):
     thread_id: str | None = "default_user"
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def home():
     return {"message": "Enterprise LangGraph RAG API is live."}
 

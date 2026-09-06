@@ -9,7 +9,7 @@ from app.services.health.connection_checker import check_all_connections
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 def health():
     """Liveness probe — returns 200 if the process is running."""
     return {"status": "ok"}
