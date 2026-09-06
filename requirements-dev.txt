@@ -1,0 +1,10 @@
+# Development, Testing, and Evaluation dependencies
+-r requirements.txt
+
+# --- DEV / LINTING ---
+ruff>=0.16.0
+
+# --- EVALUATION (EVALS) ---
+ragas>=0.3.0
+deepeval>=2.9.0
+langfuse>=4.15.0
