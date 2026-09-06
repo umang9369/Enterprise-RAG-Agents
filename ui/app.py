@@ -420,6 +420,9 @@ if prompt := st.chat_input("Ask about Kubernetes, Intel hardware, or enterprise 
                         detail = response.json().get("detail", "Unauthorized")
                         raise RuntimeError(f"🔑 {detail}")
 
+                    if response.status_code == 502:
+                        raise RuntimeError("⏳ Backend on Render is offline or waking up (cold start). Please ensure your Render service is 'Live' or wait ~30 seconds and try again.")
+
                     response.raise_for_status()
                     data = response.json()
 
